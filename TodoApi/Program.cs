@@ -28,6 +28,7 @@ builder.Services.AddDbContext<TodoAppDbContext>(options =>
 
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegistrationDtoValidation>();
+builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidation>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
@@ -53,11 +54,35 @@ app.MapPost("/register", async (
         var errors = validationResult.Errors.Select(e => new { e.PropertyName, e.ErrorMessage });
         return Results.BadRequest(errors);
     }
-    
+
     try
     {
         var response = await userService.RegisterAsync(dto);
         return Results.Ok(response);
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
+});
+
+app.MapPost("/login", async (
+    LoginDto dto,
+    IValidator<LoginDto> validator,
+    IUserService userService
+) =>
+{
+    var validationResult = await validator.ValidateAsync(dto);
+    if (!validationResult.IsValid)
+    {
+        var errors = validationResult.Errors.Select(e => new { e.PropertyName, e.ErrorMessage });
+        return Results.BadRequest(errors);
+    }
+
+    try
+    {
+        var token = await userService.LoginAsync(dto);
+        return Results.Ok(new { token });
     }
     catch (Exception ex)
     {

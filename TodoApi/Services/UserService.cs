@@ -42,4 +42,15 @@ public class UserService : IUserService
         };
     }
 
+    public async Task<string> LoginAsync(LoginDto dto)
+    {
+        var user = await _repo.GetByEmailAsync(dto.Email);
+        if (user == null)
+            throw new Exception("Invalid credentials");
+        if (_passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password) == PasswordVerificationResult.Failed)
+            throw new Exception("Invalid credentials");
+
+        return "success";
+    }
+
 }

@@ -6,5 +6,6 @@ namespace TodoApp.Services;
 public interface IUserService
 {
     Task<UserResponseDto> RegisterAsync(RegisterDto dto);
+    Task<string> LoginAsync(LoginDto dto);
 }
 
