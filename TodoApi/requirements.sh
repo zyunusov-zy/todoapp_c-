@@ -5,3 +5,4 @@ dotnet add package Microsoft.AspNetCore.Authentication.JwtBearer
 dotnet add package FluentValidation
 dotnet add package Serilog.AspNetCore
 dotnet add package Swashbuckle.AspNetCore
+dotnet add package DotNetEnv
