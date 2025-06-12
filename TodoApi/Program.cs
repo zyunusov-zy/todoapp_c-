@@ -12,6 +12,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+using System.Security.Claims;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -67,6 +68,9 @@ builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidation>();
 
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<ITaskRepository, TaskRepository>();
+builder.Services.AddScoped<ITaskService, TaskService>();
+
 
 builder.Services.AddAuthentication("Bearer")
     .AddJwtBearer("Bearer", options =>
@@ -148,7 +152,69 @@ app.MapPost("/login", async (
     }
 });
 
-app.MapGet("/tasks", [Authorize] () => Results.Ok("Hello Boss!"));
+// validate 
+app.MapPost("/tasks", [Authorize] async (
+    CreateTaskDto dto,
+    HttpContext http,
+    ITaskService service) =>
+{
+    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
+
+    if (claim is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var userId = int.Parse(claim.Value);
+    var task = await service.CreateTaskAsync(dto, userId);
+    return Results.Ok(task);
+});
+
+
+// Need to fix Claims getting from http cuz changed from sub to nameidentifier
+app.MapGet("/tasks", [Authorize] async (
+    HttpContext http,
+    ITaskService service) =>
+{
+
+    
+    var userId = int.Parse(http.User.FindFirst("sub")!.Value);
+    var tasks = await service.GetAllTasksAsync(userId);
+    return Results.Ok(tasks);
+});
+
+app.MapGet("/tasks/{id}", [Authorize] async (
+    int id,
+    HttpContext http,
+    ITaskService service) =>
+{
+    var userId = int.Parse(http.User.FindFirst("sub")!.Value);
+    var task = await service.GetTaskByIdAsync(id, userId);
+    return task is not null ? Results.Ok(task) : Results.NotFound();
+});
+
+// validate
+app.MapPut("/tasks/{id}", [Authorize] async (
+    int id,
+    UpdateTaskDto dto,
+    HttpContext http,
+    ITaskService service) =>
+{
+    var userId = int.Parse(http.User.FindFirst("sub")!.Value);
+    await service.UpdateTaskAsync(id, dto, userId);
+    return Results.NoContent();
+});
+
+app.MapDelete("/tasks/{id}", [Authorize] async (
+    int id,
+    HttpContext http,
+    ITaskService service) =>
+{
+    var userId = int.Parse(http.User.FindFirst("sub")!.Value);
+    await service.DeleteTaskAsync(id, userId);
+    return Results.NoContent();
+});
+
 
 
 

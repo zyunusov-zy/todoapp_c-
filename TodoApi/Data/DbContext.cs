@@ -11,4 +11,6 @@ public class TodoAppDbContext : DbContext
     }
 
     public DbSet<User> Users => Set<User>();
+    public DbSet<TaskItem> Tasks => Set<TaskItem>();
+
 }

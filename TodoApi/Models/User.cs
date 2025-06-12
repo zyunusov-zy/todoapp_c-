@@ -12,4 +12,6 @@ public class User
     public string Email { get; set; } = string.Empty;
     [Required]
     public string PasswordHash { get; set; } = string.Empty;
+
+    public List<TaskItem> Tasks { get; set; } = new();
 }
