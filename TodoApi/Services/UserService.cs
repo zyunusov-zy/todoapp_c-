@@ -2,6 +2,7 @@ using TodoApp.Models;
 using TodoApp.DTOs;
 using TodoApp.Repositories;
 using Microsoft.AspNetCore.Identity;
+using TodoApp.Utils;
 
 
 namespace TodoApp.Services;
@@ -11,10 +12,13 @@ public class UserService : IUserService
     private readonly IUserRepository _repo;
     private readonly PasswordHasher<User> _passwordHasher;
 
-    public UserService(IUserRepository repo)
+    private readonly IConfiguration _conf;
+
+    public UserService(IUserRepository repo, IConfiguration conf)
     {
         _repo = repo;
         _passwordHasher = new PasswordHasher<User>();
+        _conf = conf;
     }
 
     public async Task<UserResponseDto> RegisterAsync(RegisterDto dto)
@@ -50,7 +54,8 @@ public class UserService : IUserService
         if (_passwordHasher.VerifyHashedPassword(user, user.PasswordHash, dto.Password) == PasswordVerificationResult.Failed)
             throw new Exception("Invalid credentials");
 
-        return "success";
+        var token = new JwtToken(_conf).GenerateJwtToken(user);
+        return token;
     }
 
 }
