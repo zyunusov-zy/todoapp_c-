@@ -19,6 +19,8 @@ var builder = WebApplication.CreateBuilder(args);
 
 Env.Load();
 
+
+
 var connectionString = $"Host={Environment.GetEnvironmentVariable("DB_HOST")};" +
                        $"Port={Environment.GetEnvironmentVariable("DB_PORT")};" +
                        $"Database={Environment.GetEnvironmentVariable("DB_NAME")};" +
@@ -97,6 +99,12 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+// Migrations auto
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<TodoAppDbContext>();
+    db.Database.Migrate();
 }
 
 app.UseAuthentication();
