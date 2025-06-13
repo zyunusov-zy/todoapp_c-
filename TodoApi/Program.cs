@@ -1,10 +1,4 @@
 using DotNetEnv;
-using Microsoft.EntityFrameworkCore;
-using TodoApp.Data;
-using TodoApp.Validators;
-using TodoApp.Repositories;
-using TodoApp.Services;
-using TodoApp.DTOs;
 using FluentValidation;
 using FluentValidation.AspNetCore;
 using Microsoft.AspNetCore.Authorization;
@@ -12,7 +6,19 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
+
+
+using Microsoft.EntityFrameworkCore;
+
+
+
 using System.Security.Claims;
+using TodoApp.Controllers;
+using TodoApp.Data;
+using TodoApp.Validators;
+using TodoApp.Repositories;
+using TodoApp.Services;
+using TodoApp.DTOs;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -68,6 +74,8 @@ builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegistrationDtoValidation>();
 builder.Services.AddValidatorsFromAssemblyContaining<LoginDtoValidation>();
 
+builder.Services.AddControllers();
+
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ITaskRepository, TaskRepository>();
@@ -110,162 +118,9 @@ using (var scope = app.Services.CreateScope())
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.MapControllers();
 
 app.MapGet("/", () => "Hello World!");
-
-app.MapPost("/register", async (
-    RegisterDto dto,
-    IValidator<RegisterDto> validator,
-    IUserService userService) =>
-{
-    var validationResult = await validator.ValidateAsync(dto);
-    if (!validationResult.IsValid)
-    {
-        var errors = validationResult.Errors.Select(e => new { e.PropertyName, e.ErrorMessage });
-        return Results.BadRequest(errors);
-    }
-
-    try
-    {
-        var response = await userService.RegisterAsync(dto);
-        return Results.Ok(response);
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
-
-app.MapPost("/login", async (
-    LoginDto dto,
-    IValidator<LoginDto> validator,
-    IUserService userService
-) =>
-{
-    var validationResult = await validator.ValidateAsync(dto);
-    if (!validationResult.IsValid)
-    {
-        var errors = validationResult.Errors.Select(e => new { e.PropertyName, e.ErrorMessage });
-        return Results.BadRequest(errors);
-    }
-
-    try
-    {
-        var token = await userService.LoginAsync(dto);
-        return Results.Ok(new { token });
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
-
-// validate 
-app.MapPost("/tasks", [Authorize] async (
-    CreateTaskDto dto,
-    HttpContext http,
-    ITaskService service) =>
-{
-    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
-
-    if (claim is null)
-    {
-        return Results.Unauthorized();
-    }
-
-    var userId = int.Parse(claim.Value);
-    var task = await service.CreateTaskAsync(dto, userId);
-    return Results.Ok(task);
-});
-
-
-app.MapGet("/tasks", [Authorize] async (
-    HttpContext http,
-    ITaskService service) =>
-{
-
-    
-    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
-
-    if (claim is null)
-    {
-        return Results.Unauthorized();
-    }
-
-    var userId = int.Parse(claim.Value);
-    var tasks = await service.GetAllTasksAsync(userId);
-    return Results.Ok(tasks);
-});
-
-app.MapGet("/tasks/{id}", [Authorize] async (
-    int id,
-    HttpContext http,
-    ITaskService service) =>
-{
-    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
-
-    if (claim is null)
-    {
-        return Results.Unauthorized();
-    }
-
-    var userId = int.Parse(claim.Value);
-    var task = await service.GetTaskByIdAsync(id, userId);
-    return task is not null ? Results.Ok(task) : Results.NotFound();
-});
-
-// validate
-app.MapPut("/tasks/{id}", [Authorize] async (
-    int id,
-    UpdateTaskDto dto,
-    HttpContext http,
-    ITaskService service) =>
-{
-    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
-
-    if (claim is null)
-    {
-        return Results.Unauthorized();
-    }
-
-    var userId = int.Parse(claim.Value);
-    try
-    {
-        await service.UpdateTaskAsync(id, dto, userId);
-        return Results.Ok();
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
-
-app.MapDelete("/tasks/{id}", [Authorize] async (
-    int id,
-    HttpContext http,
-    ITaskService service) =>
-{
-    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
-
-    if (claim is null)
-    {
-        return Results.Unauthorized();
-    }
-
-    var userId = int.Parse(claim.Value);
-    try
-    {
-        await service.DeleteTaskAsync(id, userId);
-        return Results.Ok();
-    }
-    catch (Exception ex)
-    {
-        return Results.BadRequest(new { error = ex.Message });
-    }
-});
-
-
-app.MapGet("/admin", [Authorize(Roles = "Admin")] () => "Hello, Admin!!!");
 
 
 app.Run();
