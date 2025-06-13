@@ -15,7 +15,8 @@ public class JwtToken(IConfiguration configuration)
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Role, user.Email)
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role)
         };
         var secret = Environment.GetEnvironmentVariable("JWT_SECRET");
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret!));

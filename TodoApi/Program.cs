@@ -257,6 +257,7 @@ app.MapDelete("/tasks/{id}", [Authorize] async (
 });
 
 
+app.MapGet("/admin", [Authorize(Roles = "Admin")] () => "Hello, Admin!!!");
 
 
 app.Run();
