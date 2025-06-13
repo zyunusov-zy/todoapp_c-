@@ -221,8 +221,15 @@ app.MapPut("/tasks/{id}", [Authorize] async (
     }
 
     var userId = int.Parse(claim.Value);
-    await service.UpdateTaskAsync(id, dto, userId);
-    return Results.NoContent();
+    try
+    {
+        await service.UpdateTaskAsync(id, dto, userId);
+        return Results.Ok();
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
 });
 
 app.MapDelete("/tasks/{id}", [Authorize] async (
@@ -238,8 +245,15 @@ app.MapDelete("/tasks/{id}", [Authorize] async (
     }
 
     var userId = int.Parse(claim.Value);
-    await service.DeleteTaskAsync(id, userId);
-    return Results.NoContent();
+    try
+    {
+        await service.DeleteTaskAsync(id, userId);
+        return Results.Ok();
+    }
+    catch (Exception ex)
+    {
+        return Results.BadRequest(new { error = ex.Message });
+    }
 });
 
 
