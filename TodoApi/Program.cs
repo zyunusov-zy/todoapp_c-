@@ -171,14 +171,20 @@ app.MapPost("/tasks", [Authorize] async (
 });
 
 
-// Need to fix Claims getting from http cuz changed from sub to nameidentifier
 app.MapGet("/tasks", [Authorize] async (
     HttpContext http,
     ITaskService service) =>
 {
 
     
-    var userId = int.Parse(http.User.FindFirst("sub")!.Value);
+    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
+
+    if (claim is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var userId = int.Parse(claim.Value);
     var tasks = await service.GetAllTasksAsync(userId);
     return Results.Ok(tasks);
 });
@@ -188,7 +194,14 @@ app.MapGet("/tasks/{id}", [Authorize] async (
     HttpContext http,
     ITaskService service) =>
 {
-    var userId = int.Parse(http.User.FindFirst("sub")!.Value);
+    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
+
+    if (claim is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var userId = int.Parse(claim.Value);
     var task = await service.GetTaskByIdAsync(id, userId);
     return task is not null ? Results.Ok(task) : Results.NotFound();
 });
@@ -200,7 +213,14 @@ app.MapPut("/tasks/{id}", [Authorize] async (
     HttpContext http,
     ITaskService service) =>
 {
-    var userId = int.Parse(http.User.FindFirst("sub")!.Value);
+    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
+
+    if (claim is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var userId = int.Parse(claim.Value);
     await service.UpdateTaskAsync(id, dto, userId);
     return Results.NoContent();
 });
@@ -210,7 +230,14 @@ app.MapDelete("/tasks/{id}", [Authorize] async (
     HttpContext http,
     ITaskService service) =>
 {
-    var userId = int.Parse(http.User.FindFirst("sub")!.Value);
+    var claim = http.User.FindFirst(ClaimTypes.NameIdentifier);
+
+    if (claim is null)
+    {
+        return Results.Unauthorized();
+    }
+
+    var userId = int.Parse(claim.Value);
     await service.DeleteTaskAsync(id, userId);
     return Results.NoContent();
 });
