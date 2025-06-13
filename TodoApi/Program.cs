@@ -6,13 +6,11 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 using Microsoft.OpenApi.Models;
-
-
-using Microsoft.EntityFrameworkCore;
-
-
-
 using System.Security.Claims;
+
+using System.Data;
+using Npgsql;
+
 using TodoApp.Controllers;
 using TodoApp.Data;
 using TodoApp.Validators;
@@ -65,10 +63,7 @@ builder.Services.AddSwaggerGen(options =>
     });
 });
 
-builder.Services.AddDbContext<TodoAppDbContext>(options =>
-{
-    options.UseNpgsql(connectionString);
-});
+builder.Services.AddScoped<IDbConnection>(_ => new NpgsqlConnection(connectionString));
 
 builder.Services.AddFluentValidationAutoValidation();
 builder.Services.AddValidatorsFromAssemblyContaining<RegistrationDtoValidation>();
@@ -103,16 +98,16 @@ builder.Services.AddAuthorization();
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<IDbConnection>();
+    DbInitializer.Initialize(db);
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-}
-// Migrations auto
-using (var scope = app.Services.CreateScope())
-{
-    var db = scope.ServiceProvider.GetRequiredService<TodoAppDbContext>();
-    db.Database.Migrate();
 }
 
 app.UseAuthentication();
